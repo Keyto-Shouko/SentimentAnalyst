@@ -12,7 +12,21 @@ enum Sentiment: String {
     case negative = "NEGATIVE"
     case mixed = "MIXED"
     case neutral = "NEUTRAL"
+}
     
+    extension Sentiment {
+    func getColor() -> Color {
+        switch (self) {
+        case .positive:
+            return .green
+        case .negative:
+            return .red
+        case .mixed:
+            return .purple
+        case .neutral:
+            return .gray
+        }
+    }
     func getEmoji(self: Sentiment) -> String {
         switch self {
         case .positive:
@@ -27,42 +41,73 @@ enum Sentiment: String {
     }
 }
 
+
+
 struct ContentView: View {
-    
-    @State var modelInput : String = "ouaiiii"
-    @State var outputSentiment : Sentiment = .mixed
+    @State var modelInput: String = ""
+    @State var modelOutput: String = ""
+    @State var outputSentiment: Sentiment? = nil
     
     var body: some View {
-        NavigationStack{
+        NavigationStack {
             VStack {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("Entrez un texte et l'IA devinera le sentiment (normalement)")
-                        .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Parlez de l'OM, l'IA fera le reste")
+                        .fontWeight(.bold)
                         .fontDesign(.monospaced)
-                        .foregroundStyle(.yellow)
-                    TextField("Enter text", text: $modelInput)
-                                        .padding()
-                                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    Button(action: {
-                        
-                    }, label: {
-                        Text("Ajouter")
-                    })
+                        .foregroundStyle(.white)
                     
-                }
-                .background(Color.purple)
-                VStack (alignment: .leading, spacing: 18){
-                    Text($outputSentiment).background(Color.cyan)
-                }
+                    TextEditor(text: $modelInput).onChange(of: modelInput, {
+                        oldValue, newValue in outputSentiment = nil
+                    }).frame(height: 100)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    
+                    Button(action: {
+                        classify()
+                    }, label: {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                            Text("Deviner le sentiment")
+                        }.padding()
+                    })
+                    .buttonStyle(BorderedProminentButtonStyle())
+                    .frame(minWidth: 0, maxWidth: .infinity)
+                    .padding()
+                    
+                }.padding()
+                    .background(Color.purple.gradient.opacity(0.9))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 
+                VStack {
+                    Text(outputSentiment?.getEmoji() ?? "")
+                    Text(outputSentiment?.rawValue ?? "")
+                }.frame(minWidth: 0, maxWidth: .infinity)
+                    .padding()
+                    .background(outputSentiment?.getColor().gradient ?? Color.blue.gradient)
+                    .clipShape(RoundedRectangle(cornerRadius: 18.0))
+                    .opacity(outputSentiment == nil ? 0 : 1.0)
+                    .scaleEffect(outputSentiment == nil ? 0.3 : 1.0)
+                    .animation(.bouncy, value: outputSentiment)
+                Spacer()
             }
+            .navigationTitle("🧠 IA du passé")
             .padding()
         }
-        .navigationBarTitle("Sentiment Analysis")
     }
     
+    func classify() {
+        do {
+            // MyModel est une classe générée automatiquement par Xcode
+            let model = try SentimentAnalysis_1(configuration: .init())
+            let prediction = try model.prediction(text: modelInput)
+            modelOutput = prediction.label
+            outputSentiment = Sentiment(rawValue: modelOutput)
+        } catch {
+            modelOutput = "Something went wrong"
+        }
+    }
 }
 
 #Preview{
-    ContentView(modelInput: "LEZGO CHELSEA", outputSentiment: .positive)
+    ContentView(modelInput: "ALLER L'OM !!!!", outputSentiment: .positive)
 }
